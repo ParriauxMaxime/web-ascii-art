@@ -42,3 +42,9 @@ body {
   line-break: anywhere;
   word-break: break-all;
 }
+
+@media (width <= 600px) {
+  #text {
+    font-size: 9.9px;
+  }
+}

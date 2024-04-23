@@ -30,12 +30,6 @@ const MAX_UINT8 = 256;
 const FONT_SIZE_RATIO = 6;
 const FRAMERATE = 60;
 
-// multi-browser compatibility
-navigator.getMedia = navigator.getUserMedia
-  || navigator.webkitGetUserMedia
-  || navigator.mozGetUserMedia
-  || navigator.msGetUserMedia;
-
 /**
  * Random factors from SO will do the trick
  */
@@ -92,10 +86,10 @@ function draw({ height, width }) {
   const greyScale = toGreyScale(canvas, imageData);
 
   const closestWidth = Math.round(
-    greyScale.width - (greyScale.width % FONT_SIZE_RATIO),
+    (greyScale.width) - ((greyScale.width) % FONT_SIZE_RATIO),
   );
   const closestHeight = Math.round(
-    greyScale.height - (greyScale.height % FONT_SIZE),
+    (greyScale.height) - ((greyScale.height) % FONT_SIZE),
   );
   ctx.putImageData(greyScale, 0, 0, 0, 0, closestWidth, closestHeight);
   const greyScaleImageData = ctx.getImageData(
