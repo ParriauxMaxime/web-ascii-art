@@ -6,7 +6,24 @@ const globals = {
   },
 };
 
-const SYMBOLS = ['.', ':', '-', '=', '+', 'o', 'a', 'j', 'k', 'H', 'd', 'p', 'q', '#', '%', '@'];
+const SYMBOLS = [
+  '.',
+  ':',
+  '-',
+  '=',
+  '+',
+  'o',
+  'a',
+  'j',
+  'k',
+  'H',
+  'd',
+  'p',
+  'q',
+  '#',
+  '%',
+  '@',
+];
 const NB_VARIANT = SYMBOLS.length;
 const FONT_SIZE = 10;
 const MAX_UINT8 = 256;
@@ -14,20 +31,16 @@ const FONT_SIZE_RATIO = 6;
 const FRAMERATE = 60;
 
 // multi-browser compatibility
-navigator.getMedia = (
-  navigator.getUserMedia
+navigator.getMedia = navigator.getUserMedia
   || navigator.webkitGetUserMedia
   || navigator.mozGetUserMedia
-  || navigator.msGetUserMedia
-);
+  || navigator.msGetUserMedia;
 
 /**
  * Random factors from SO will do the trick
  */
 function weightedAverageColor(r, g, b) {
-  return Math.round(
-    0.299 * r + 0.587 * g + 0.114 * b,
-  );
+  return Math.round(0.299 * r + 0.587 * g + 0.114 * b);
 }
 
 /** This may have given better result */
@@ -38,7 +51,9 @@ function weightedAverageColor(r, g, b) {
 // }
 
 function toGreyScale(canvas, imageData, averageFct = weightedAverageColor) {
-  const imgData = canvas.getContext('2d').createImageData(canvas.width, canvas.height);
+  const imgData = canvas
+    .getContext('2d')
+    .createImageData(canvas.width, canvas.height);
   for (let i = 0; i < imageData.width * imageData.height * 4; i += 4) {
     const mean = averageFct(
       imageData.data[i],
@@ -58,48 +73,64 @@ function getConvolution(imageData, imageWidth, x, y, width, height) {
   let sum = 0;
   for (let j = 0; j < height; j += 1) {
     for (let i = 0; i < width; i += 1) {
-      sum += imageData[x + i + ((y + j) * imageWidth)] || 0;
+      sum += imageData[x + i + (y + j) * imageWidth] || 0;
     }
   }
-  if (Number.isNaN((Math.round(sum / (width * height))))) {
+  if (Number.isNaN(Math.round(sum / (width * height)))) {
     throw new Error('This is terrible and should not happen');
   }
   return Math.round(sum / (width * height)) || 0;
 }
 
-function draw({
-  height, width,
-}) {
+function draw({ height, width }) {
   const canvas = document.getElementById('canvas');
   const video = document.getElementById('video');
   const text = document.getElementById('text');
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
   ctx.drawImage(video, 0, 0, width, height);
   const imageData = ctx.getImageData(0, 0, width, height);
   const greyScale = toGreyScale(canvas, imageData);
 
-  const closestWidth = Math.round(greyScale.width - (greyScale.width % FONT_SIZE_RATIO));
-  const closestHeight = Math.round(greyScale.height - (greyScale.height % FONT_SIZE));
+  const closestWidth = Math.round(
+    greyScale.width - (greyScale.width % FONT_SIZE_RATIO),
+  );
+  const closestHeight = Math.round(
+    greyScale.height - (greyScale.height % FONT_SIZE),
+  );
   ctx.putImageData(greyScale, 0, 0, 0, 0, closestWidth, closestHeight);
-  const greyScaleImageData = ctx.getImageData(0, 0, closestWidth, closestHeight);
-  const greyScaleSimplified = new Uint8ClampedArray(closestHeight * closestWidth)
-    .map((e, i) => greyScaleImageData.data[i * 4]);
+  const greyScaleImageData = ctx.getImageData(
+    0,
+    0,
+    closestWidth,
+    closestHeight,
+  );
+  const greyScaleSimplified = new Uint8ClampedArray(
+    closestHeight * closestWidth,
+  ).map((e, i) => greyScaleImageData.data[i * 4]);
 
   const convolutedData = [];
-  for (let i = 0; i < (closestWidth / FONT_SIZE_RATIO) * (closestHeight / FONT_SIZE); i += 1) {
-    const x = (FONT_SIZE_RATIO * i) % (closestWidth);
-    const y = FONT_SIZE * Math.floor((FONT_SIZE_RATIO * i) / (closestWidth));
-    convolutedData.push(getConvolution(
-      greyScaleSimplified,
-      closestWidth,
-      x,
-      y,
-      FONT_SIZE_RATIO,
-      FONT_SIZE,
-    ));
+  for (
+    let i = 0;
+    i < (closestWidth / FONT_SIZE_RATIO) * (closestHeight / FONT_SIZE);
+    i += 1
+  ) {
+    const x = (FONT_SIZE_RATIO * i) % closestWidth;
+    const y = FONT_SIZE * Math.floor((FONT_SIZE_RATIO * i) / closestWidth);
+    convolutedData.push(
+      getConvolution(
+        greyScaleSimplified,
+        closestWidth,
+        x,
+        y,
+        FONT_SIZE_RATIO,
+        FONT_SIZE,
+      ),
+    );
   }
 
-  const str = convolutedData.map((e) => SYMBOLS[Math.floor(e / (MAX_UINT8 / NB_VARIANT))]).join('');
+  const str = convolutedData
+    .map((e) => SYMBOLS[Math.floor(e / (MAX_UINT8 / NB_VARIANT))])
+    .join('');
 
   text.innerText = str;
 }
@@ -132,22 +163,29 @@ function run() {
   }
 
   video.addEventListener('playing', onVideoPlaying, false);
-  navigator.getMedia(
+  navigator.mediaDevices.getUserMedia(
     globals.mediaOptions,
-    setAgnosticStream,
-    console.error.bind(null, 'An error occured: '),
-  );
+  ).then(setAgnosticStream);
 
-  loop = setInterval(() => draw({
-    canvas, video, width, height, text,
-  }), 1000 / FRAMERATE);
+  loop = setInterval(
+    () => draw({
+      canvas,
+      video,
+      width,
+      height,
+      text,
+    }),
+    1000 / FRAMERATE,
+  );
 }
 
 function debounce(func, timeout = 100) {
   let timer;
   return (...args) => {
     clearTimeout(timer);
-    timer = setTimeout(() => { func.apply(this, args); }, timeout);
+    timer = setTimeout(() => {
+      func.apply(this, args);
+    }, timeout);
   };
 }
 function onResize() {
@@ -167,8 +205,11 @@ function onResize() {
   run();
 }
 
-window.addEventListener('resize', debounce(() => {
-  onResize();
-}));
+window.addEventListener(
+  'resize',
+  debounce(() => {
+    onResize();
+  }),
+);
 
 window.addEventListener('load', run);
