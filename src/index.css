@@ -8,13 +8,12 @@ html, body {
   max-height: 100dvh;
   min-height: 100dvh;
   background: linear-gradient(#12100E, #2B4162);
-
+  overflow: hidden;
 }
 
 body {
   position: relative;
   display: flex;
-  /* overflow: hidden; */
 }
 
 #video-container, #canvas-container {
